@@ -1,11 +1,18 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { css } from "@emotion/react";
 import Calendar from "react-calendar";
 import dayjs from "dayjs";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { useRecoilValue } from "recoil";
 
+// utils
 import { TodoItem, TodoList } from "utils/types";
+
+// store
+import { dataAtom } from "store/data/atom";
+
+import TodoForm from "./TodoForm";
 
 const root = css`
   padding: 30px 0;
@@ -123,24 +130,15 @@ const tileContentBox = css`
 
 const CalendarComponent = () => {
   const [focusedDate, setFocusedDate] = useState<string>(
-    dayjs().format("YYYY-MM-DD")
+    dayjs().format("YYYY-MM-01")
   );
-  const [todo, setTodo] = useState<TodoList>({
-    "2022-10-27": [
-      { id: 1, description: "ㅇㅇ", done: false },
-      { id: 2, description: "ㅇㅇ", done: true },
-    ],
-    "2022-11-27": [
-      { id: 1, description: "ㅇㅇ", done: false },
-      { id: 2, description: "ㅇㅇ", done: true },
-      { id: 3, description: "ㅇㅇ", done: true },
-    ],
-  });
-
-  console.log(focusedDate);
+  const [targetDate, setTargetDate] = useState<string | null>(null);
+  const data: TodoList = useRecoilValue(dataAtom);
 
   return (
     <div css={root}>
+      <TodoForm onClose={() => setTargetDate(null)} targetDate={targetDate} />
+
       <p css={title}>Calendar And TodoList</p>
 
       <div css={calendarNavigationBox}>
@@ -166,13 +164,20 @@ const CalendarComponent = () => {
       </div>
 
       <Calendar
-        value={new Date(focusedDate)}
         showNavigation={false}
+        value={new Date(focusedDate)}
+        activeStartDate={new Date(focusedDate)}
+        onChange={(date: any) =>
+          setFocusedDate(dayjs(date).format("YYYY-MM-01"))
+        }
         calendarType="US"
-        onClickDay={(date, e) => {}}
+        onClickDay={(date, e) => {
+          setTargetDate(dayjs(date).format("YYYY-MM-DD"));
+        }}
         tileDisabled={({ date }) => {
           const isCurrentMonth =
-            dayjs(date).get("month") === dayjs(focusedDate).get("month");
+            dayjs(date).format("YYYY-MM") ===
+            dayjs(focusedDate).format("YYYY-MM");
 
           return !isCurrentMonth;
         }}
@@ -198,8 +203,8 @@ const CalendarComponent = () => {
         tileContent={({ date, view }) => {
           const dateString: string = dayjs(date).format("YYYY-MM-DD");
 
-          if (todo[dateString] !== undefined) {
-            const todoList: TodoItem[] = todo[dateString];
+          if (data[dateString] !== undefined || data[dateString]?.length > 0) {
+            const todoList: TodoItem[] = data[dateString];
             const totalCount: number = todoList.length;
             const doneCount: number = todoList.filter(
               (item) => item.done
@@ -210,7 +215,7 @@ const CalendarComponent = () => {
                 <p>
                   할일: {doneCount} / {totalCount}
                   <br />
-                  달성률: {((doneCount / totalCount) * 100).toFixed(2)}
+                  달성률: {((doneCount / totalCount) * 100).toFixed(2)}%
                 </p>
               </div>
             );
