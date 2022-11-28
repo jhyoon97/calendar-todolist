@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/calendar-todolist/static/js/main.eb47ef41.js",
+    "index.html": "/calendar-todolist/index.html",
+    "main.eb47ef41.js.map": "/calendar-todolist/static/js/main.eb47ef41.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.eb47ef41.js"
+  ]
+}
