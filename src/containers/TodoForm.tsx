@@ -6,6 +6,9 @@ import dayjs from "dayjs";
 import { useRecoilState } from "recoil";
 import { HiPlus } from "react-icons/hi";
 import { MdDone } from "react-icons/md";
+import { CiEdit } from "react-icons/ci";
+import { HiXMark } from "react-icons/hi2";
+import { IoTrashOutline } from "react-icons/io5";
 import { v1 as uuidv1 } from "uuid";
 
 // utils
@@ -80,13 +83,16 @@ const listBox = css`
   overflow-y: auto;
 `;
 
+const itemBox = css`
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 10px 0;
+  width: 100%;
+`;
+
 const getTodoItemStyle = (done: boolean) => {
   return css`
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    margin: 10px 0;
-    width: 100%;
     cursor: pointer;
 
     .done {
@@ -104,11 +110,27 @@ const getTodoItemStyle = (done: boolean) => {
       }
     }
 
-    p {
+    .description {
+      flex: 1;
       color: ${done ? "#999" : "#333"};
+    }
+
+    .button {
+      margin-left: 5px;
     }
   `;
 };
+
+const editItemStyle = css`
+  input {
+    flex: 1;
+    border-bottom: 1px solid #eaeaea;
+  }
+
+  .button {
+    margin-left: 5px;
+  }
+`;
 
 const inputBox = css`
   display: flex;
@@ -134,6 +156,8 @@ const submitButton = css`
 const TodoForm = ({ onClose, targetDate }: Props) => {
   const [data, setData] = useRecoilState<TodoList>(dataAtom);
   const [inputValue, setInputValue] = useState<string>("");
+  const [editTargetId, setEditTargetId] = useState<string>("");
+  const [editValue, setEditValue] = useState<string>("");
   const targetList: TodoItem[] = targetDate ? data[targetDate] || [] : [];
   const totalCount: number = targetList.length;
   const doneCount: number = targetList.filter((item) => item.done).length;
@@ -146,6 +170,7 @@ const TodoForm = ({ onClose, targetDate }: Props) => {
       ariaHideApp={false}
       style={style}
       onRequestClose={() => {
+        setEditTargetId("");
         setInputValue("");
         onClose();
       }}
@@ -163,36 +188,119 @@ const TodoForm = ({ onClose, targetDate }: Props) => {
           </p>
         </div>
         <div css={listBox}>
-          {targetList.map((item, index) => (
-            <div
-              key={item.id}
-              css={getTodoItemStyle(item.done)}
-              onClick={() => {
-                const newTargetList: TodoItem[] = [];
+          {targetList.map((item, index) => {
+            if (item.id === editTargetId) {
+              return (
+                <form
+                  key={item.id}
+                  css={[itemBox, editItemStyle]}
+                  onSubmit={(e) => {
+                    e.preventDefault();
 
-                targetList.forEach((todo) => {
-                  newTargetList.push({ ...todo });
-                });
+                    const newTargetList: TodoItem[] = [];
 
-                const targetIndex = newTargetList.findIndex(
-                  (todo) => todo.id === item.id
-                );
+                    targetList.forEach((todo) => {
+                      newTargetList.push({
+                        ...todo,
+                        description:
+                          todo.id === editTargetId
+                            ? editValue
+                            : todo.description,
+                      });
+                    });
 
-                newTargetList[targetIndex].done =
-                  !newTargetList[targetIndex].done;
+                    setData({
+                      ...data,
+                      [targetDate]: newTargetList,
+                    });
+                    setEditValue("");
+                    setEditTargetId("");
+                  }}
+                >
+                  <input
+                    onChange={(e) => setEditValue(e.target.value)}
+                    value={editValue}
+                  />
 
-                setData({
-                  ...data,
-                  [targetDate]: newTargetList,
-                });
-              }}
-            >
-              <div className="done">
-                <MdDone color="#36c898" size="25" />
-              </div>
-              <p>{item.description}</p>
-            </div>
-          ))}
+                  <button type="submit">
+                    <MdDone color="#36c898" size="25" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+
+                      setEditTargetId("");
+                      setEditValue("");
+                    }}
+                  >
+                    <HiXMark color="#f04f4f" size="25" />
+                  </button>
+                </form>
+              );
+            } else {
+              return (
+                <div
+                  key={item.id}
+                  css={[itemBox, getTodoItemStyle(item.done)]}
+                  onClick={() => {
+                    const newTargetList: TodoItem[] = [];
+
+                    targetList.forEach((todo) => {
+                      newTargetList.push({ ...todo });
+                    });
+
+                    const targetIndex = newTargetList.findIndex(
+                      (todo) => todo.id === item.id
+                    );
+
+                    newTargetList[targetIndex].done =
+                      !newTargetList[targetIndex].done;
+
+                    setData({
+                      ...data,
+                      [targetDate]: newTargetList,
+                    });
+                  }}
+                >
+                  <div className="done">
+                    <MdDone color="#36c898" size="25" />
+                  </div>
+                  <p className="description">{item.description}</p>
+                  <button
+                    className="button"
+                    onClick={() => {
+                      setEditTargetId(item.id);
+                      setEditValue(item.description);
+                    }}
+                  >
+                    <CiEdit color="#4f5af0" size="25" />
+                  </button>
+                  <button
+                    className="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+
+                      const newData: TodoList = { ...data };
+                      const newTargetList: TodoItem[] = newData[
+                        targetDate
+                      ].filter((todo) => todo.id !== item.id);
+
+                      if (newTargetList.length > 0) {
+                        newData[targetDate] = newTargetList;
+                      } else {
+                        delete newData[targetDate];
+                      }
+
+                      setData(newData);
+                    }}
+                  >
+                    <IoTrashOutline color="#f04f4f" size="25" />
+                  </button>
+                </div>
+              );
+            }
+          })}
         </div>
         <form
           css={inputBox}
