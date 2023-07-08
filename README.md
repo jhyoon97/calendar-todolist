@@ -1,4 +1,4 @@
-# [링크](https://jjecgd.github.io/calendar-todolist/)
+# [링크](https://jhyoon97.github.io/calendar-todolist/)
 
 > typescript로 구현한 calendar + todolist
 
